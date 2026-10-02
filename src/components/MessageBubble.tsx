@@ -6,6 +6,7 @@ import {
   CommentOutlined,
   DeleteOutlined,
   EditOutlined,
+  EnvironmentFilled,
   EnvironmentOutlined,
   ExclamationCircleOutlined,
   FileTextOutlined,
@@ -14,6 +15,7 @@ import {
   UserOutlined,
 } from '@ant-design/icons';
 import { formatMessageTime } from '../lib/format';
+import { tilesCovering, tileUrl } from '../lib/geo';
 import { linkify } from '../lib/linkify';
 import { GENERIC_TEXT } from '../lib/notifications';
 import type { ChatMessage } from '../types';
@@ -29,6 +31,34 @@ function useUrlRefresh(message: ChatMessage, onResolveUrl?: UrlResolver) {
     refreshed.current = true;
     void onResolveUrl(message);
   };
+}
+
+const MAP_W = 320;
+const MAP_H = 150;
+const MAP_ZOOM = 15;
+
+// Мини-карта из растровых тайлов OSM - отдельный сервис статических карт
+// не нужен (staticmap.openstreetmap.de умер), тайлы грузит любой CDN OSM
+function TileMap({ latitude, longitude }: { latitude: number; longitude: number }) {
+  return (
+    <span className="bubble__map">
+      <span className="bubble__map-tiles">
+        {tilesCovering(latitude, longitude, MAP_ZOOM, MAP_W, MAP_H).map((t) => (
+          <img
+            key={`${t.x}/${t.y}`}
+            src={tileUrl(t.x, t.y, MAP_ZOOM)}
+            alt=""
+            loading="lazy"
+            style={{ left: t.left, top: t.top }}
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+        ))}
+      </span>
+      <EnvironmentFilled className="bubble__map-pin" />
+    </span>
+  );
 }
 
 interface MessageBubbleProps {
@@ -344,17 +374,7 @@ function MessageBody({
     const hasCoords = latitude != null && longitude != null;
     const card = (
       <>
-        {hasCoords && (
-          <img
-            className="bubble__map"
-            src={`https://staticmap.openstreetmap.de/staticmap.php?center=${latitude},${longitude}&zoom=15&size=320x150&markers=${latitude},${longitude},red-pushpin`}
-            alt="Карта"
-            loading="lazy"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
-          />
-        )}
+        {hasCoords && <TileMap latitude={latitude} longitude={longitude} />}
         <span className="bubble__card">
           <span className="bubble__card-icon">
             <EnvironmentOutlined />

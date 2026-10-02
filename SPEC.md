@@ -151,13 +151,19 @@ API (`navigator.locks.request('green-api-notifications')`); при закрыт�
 `storage` в остальных вкладках вызывает `persist.rehydrate()` сторов
 (`useTabSync`).
 
-### Скролл и фоновый узор: два баг-фикса
+### Скролл, фоновый узор и мобильный зум
 
-- Скролл к последнему сообщению и к оригиналу цитаты - только
-  `messagesRef.scrollTo` на самом контейнере `.chat-window__messages`
-  (`ChatWindow.tsx`), НЕ `scrollIntoView`: он крутил бы всех предков с
-  overflow, а с декоративным узором `.chat-window` стал scrollable и
-  весь чат уезжал вверх при любом автоматическом скролле.
+- Автоскролл списка (`useLayoutEffect` в `ChatWindow.tsx`): вход в чат -
+  мгновенный `scrollTop = scrollHeight` без анимации; новые сообщения
+  опускают вниз только если юзер уже у низа (<80px, флаг `atBottomRef`
+  обновляется в `onScroll`); prepend истории компенсируется
+  `scrollTop += delta scrollHeight` - читаемое место не уезжает. Ранее
+  `smooth`-скролл на каждый merge истории давал видимое 'сверху вниз'.
+- Скролл к оригиналу цитаты - только `messagesRef.scrollTo` на самом
+  контейнере `.chat-window__messages`, НЕ `scrollIntoView`: он крутил
+  бы всех предков с overflow, а с декоративным узором `.chat-window`
+  стал scrollable и весь чат уезжал вверх при любом автоматическом
+  скролле.
 - Узор чата - `.chat-window::before` с `inset: -100%` и поворотом на
   45deg (запас, чтобы края не оголялись на широких окнах); слой висит на
   `.chat-window`, а не на скроллящемся контейнере - иначе расширил бы
@@ -212,6 +218,12 @@ GREEN-API - 10000 записей.
 - Палитра WhatsApp-подобная: accent `#00a884`, исходящий пузырь
   `#d9fdd3`/`#005c4b`, фон чата `#efeae2`/`#0b141a`, мета-серый через
   полупрозрачные rgba.
+- Запрет мобильного зума тремя слоями: `font-size: 16px` на
+  инпутах в `@media (max-width: 767px)` (убирает автозум iOS Safari при
+  фокусе - его порог 16px), `maximum-scale=1.0, user-scalable=no` в
+  viewport и `touch-action: manipulation` на `body` (Android/Chrome:
+  дабл-тап и пинч), плюс `preventDefault` на multi-touch `touchstart` и
+  `gesture*` в `main.tsx` - iOS 10+ игнорирует `user-scalable=no`.
 
 ### Тестируемость
 

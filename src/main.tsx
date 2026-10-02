@@ -19,6 +19,19 @@ try {
   // localStorage недоступен (приватный режим) - применятся дефолты App
 }
 
+// Запрет pinch-зума: iOS с 10 версии игнорирует user-scalable=no,
+// поэтому глушим multi-touch и gesture-события руками
+document.addEventListener(
+  'touchstart',
+  (e) => {
+    if (e.touches.length > 1) e.preventDefault();
+  },
+  { passive: false },
+);
+for (const ev of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(ev, (e) => e.preventDefault());
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />

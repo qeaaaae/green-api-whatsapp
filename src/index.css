@@ -60,6 +60,8 @@ body {
   font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
   background: var(--page);
   overflow: hidden;
+  /* убирает зум по двойному тапу (Android/Chrome, частично iOS) */
+  touch-action: manipulation;
 }
 
 /* --- Кастомные скроллбары в фирменном зелёном --- */
@@ -719,10 +721,44 @@ body {
 
 .bubble__map {
   display: block;
+  position: relative;
   width: 100%;
-  max-width: 280px;
+  max-width: 320px;
+  height: 150px;
   border-radius: 6px;
   margin-bottom: 6px;
+  overflow: hidden;
+  background: var(--panel-hover);
+}
+
+/* слой тайлов фиксированных 320px - центр всегда совпадает с центром контейнера,
+   на узких экранах карта просто обрезается по краям, а метка остаётся в центре */
+.bubble__map-tiles {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 320px;
+  height: 150px;
+  margin-left: -160px;
+}
+
+.bubble__map img {
+  position: absolute;
+  width: 256px;
+  height: 256px;
+  user-select: none;
+  pointer-events: none;
+}
+
+.bubble__map-pin {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -96%);
+  font-size: 26px;
+  color: #e02f2f;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.4));
+  z-index: 1;
 }
 
 .bubble__audio {
@@ -1074,6 +1110,13 @@ body {
 /* --- Мобильная адаптация --- */
 
 @media (max-width: 767px) {
+  /* iOS Safari автозумит инпуты с font-size < 16px при фокусе */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
   .app-sider {
     border-right: none;
   }

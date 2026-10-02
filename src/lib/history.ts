@@ -112,12 +112,22 @@ const attempted = new Set<string>();
  * мержит сообщения по id и раскладывает реакции по stanzaId.
  * Один раз на чат за сессию; ошибки API игнорируются.
  */
+const HISTORY_MIN_GAP = 1100;
+let lastHistoryCall = 0;
+
 export async function ensureChatHistory(
   creds: Parameters<typeof getChatHistory>[0],
   chatId: string,
 ): Promise<void> {
   if (attempted.has(chatId)) return;
   attempted.add(chatId);
+  // getChatHistory ограничен 1 запросом/с (429 при пачке) - разносим вызовы
+  const now = Date.now();
+  const startAt = Math.max(now, lastHistoryCall + HISTORY_MIN_GAP);
+  lastHistoryCall = startAt;
+  if (startAt > now) {
+    await new Promise((r) => setTimeout(r, startAt - now));
+  }
   try {
     const items = await getChatHistory(creds, chatId);
     const messages: ChatMessage[] = [];

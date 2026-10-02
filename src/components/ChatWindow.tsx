@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Avatar, Button, Empty, Input, Modal, Typography, message, type InputRef } from 'antd';
 import {
   ArrowLeftOutlined,
@@ -28,6 +28,11 @@ import { AttachmentMenu, type OutgoingDraft } from './AttachmentMenu';
 import { replyQuoteOf } from './attachments/types';
 import { MessageBubble } from './MessageBubble';
 
+// readChat на Developer-тарифе ограничен месячной квотой (466 при исчерпании) -
+// не дёргаем чаще раза в 15 с на чат
+const READ_CHAT_INTERVAL = 15_000;
+const lastReadChatAt = new Map<string, number>();
+
 export function ChatWindow({ onBack }: { onBack?: () => void }) {
   const chat = useChatStore((s) => (s.activeChatId ? s.chats[s.activeChatId] : undefined));
   const addMessage = useChatStore((s) => s.addMessage);
@@ -45,16 +50,37 @@ export function ChatWindow({ onBack }: { onBack?: () => void }) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const inputRef = useRef<InputRef>(null);
   const lastTypingSent = useRef(0);
+  const atBottomRef = useRef(true);
+  const prevListHeightRef = useRef(0);
+  const prevListChatRef = useRef<string | null>(null);
 
   const chatId = chat?.chatId;
   const lastMessageId = chat?.messages.at(-1)?.id;
 
-  useEffect(() => {
-    // scrollTo на самом контейнере: scrollIntoView крутил бы и предков -
-    // с декоративным узором .chat-window стал scrollable и весь чат уезжал вверх
+  // Скролл: вход в чат - мгновенно вниз (без smooth-анимации), новые сообщения
+  // опускают вниз только если юзер уже у низа, prepend истории - позиция стоит
+  useLayoutEffect(() => {
     const el = messagesRef.current;
-    el?.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
-  }, [chat?.messages.length]);
+    if (!el) return;
+    if (prevListChatRef.current !== (chatId ?? null)) {
+      prevListChatRef.current = chatId ?? null;
+      atBottomRef.current = true;
+      el.scrollTop = el.scrollHeight;
+    } else if (atBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+    } else {
+      const grown = el.scrollHeight - prevListHeightRef.current;
+      if (grown > 0) el.scrollTop += grown;
+    }
+    prevListHeightRef.current = el.scrollHeight;
+  }, [chatId, chat?.messages.length]);
+
+  const onMessagesScroll = () => {
+    const el = messagesRef.current;
+    if (!el) return;
+    atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    prevListHeightRef.current = el.scrollHeight;
+  };
 
   // Таймер подсветки чистим на unmount - иначе setState на мёртвом компоненте
   useEffect(
@@ -85,9 +111,11 @@ export function ChatWindow({ onBack }: { onBack?: () => void }) {
   // readChat: помечаем прочитанным при открытии и приходе новых сообщений
   // (авто-прочтение на инстансе выключено - markIncomingMessagesReaded: 'no')
   useEffect(() => {
-    if (credentials && chatId && lastMessageId) {
-      void readChat(credentials, chatId).catch(() => {});
-    }
+    if (!credentials || !chatId || !lastMessageId) return;
+    const last = lastReadChatAt.get(chatId) ?? 0;
+    if (Date.now() - last < READ_CHAT_INTERVAL) return;
+    lastReadChatAt.set(chatId, Date.now());
+    void readChat(credentials, chatId).catch(() => {});
   }, [credentials, chatId, lastMessageId]);
 
   // Без чата показываем заглушку; без credentials окно не рендерится вовсе
@@ -330,6 +358,7 @@ export function ChatWindow({ onBack }: { onBack?: () => void }) {
         className="chat-window__messages"
         // На весь список сообщений - наше меню, браузерное не нужно
         onContextMenu={(e) => e.preventDefault()}
+        onScroll={onMessagesScroll}
       >
         {chat.messages.map((m, i) => {
           const prev = chat.messages[i - 1];

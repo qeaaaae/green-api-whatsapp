@@ -126,14 +126,14 @@ zustand/middleware persist с in-memory fallback.
 
 | Функция | UI | API-метод(ы) | Где в коде |
 |---|---|---|---|
-| Отметить прочитанным | При открытии чата и при приходе новых сообщений в открытый чат | `readChat` (fire-and-forget) | `useEffect` на `lastMessageId` в `ChatWindow.tsx` |
+| Отметить прочитанным | При открытии чата и при приходе новых сообщений в открытый чат | `readChat` (fire-and-forget, не чаще 1 раза в 15 с на чат - на Developer-тарифе у метода месячная квота, ответ 466) | `useEffect` на `lastMessageId` в `ChatWindow.tsx` |
 | Авто-прочтение выключено | Синие галочки у собеседника только после реального открытия | `setSettings`: `markIncomingMessagesReaded: 'no'` | `src/api/greenApi.ts` |
 
 ### История чата
 
 | Функция | UI | API-метод(ы) | Где в коде |
 |---|---|---|---|
-| Подгрузка истории при открытии | Старые сообщения вставляются по timestamp, статусы обновляются, реакции раскладываются по `stanzaId` | `getChatHistory` (последние 100), один раз на чат за сессию | `ensureChatHistory`, `toMessage` в `src/lib/history.ts`; `mergeMessages` в `chatStore.ts` |
+| Подгрузка истории при открытии | Старые сообщения вставляются по timestamp, статусы обновляются, реакции раскладываются по `stanzaId` | `getChatHistory` (последние 100), один раз на чат за сессию, вызовы разнесены >=1.1 с (лимитер GREEN-API 1 р/с, 429) | `ensureChatHistory`, `toMessage` в `src/lib/history.ts`; `mergeMessages` в `chatStore.ts` |
 | Аккуратный merge | Заглушки текста ('Файл', 'Опрос'...) не затирают реальный текст; `extra` мержится глубоко | - | `GENERIC_TEXT`, `defined` в `chatStore.ts` |
 
 ### Синхронизация при входе
@@ -165,7 +165,7 @@ zustand/middleware persist с in-memory fallback.
 | `videoMessage` | `video` | `<video controls>` с poster из `jpegThumbnail` (base64) |
 | `audioMessage` | `audio` | `<audio controls>` |
 | `documentMessage` | `file` | Карточка 'иконка + имя файла + Скачать' |
-| `locationMessage` | `location` | Статическая карта OSM + название + адрес + координаты; клик -> openstreetmap.org |
+| `locationMessage` | `location` | Мини-карта из растровых тайлов `tile.openstreetmap.org` (собирается через `tilesCovering` в `lib/geo.ts`, метка-пин по центру) + название + адрес + координаты; клик -> openstreetmap.org |
 | `contactMessage` | `contact` | Карточка: имя + телефон + компания (парсинг `TEL:`/`ORG:` из vCard) |
 | `pollMessage` | `poll` | Вопрос + варианты с radio-кружками + подсказка |
 | `pollUpdateMessage` | `text` | 'Голос в опросе ... : вариант' |

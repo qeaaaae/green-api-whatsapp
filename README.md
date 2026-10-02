@@ -68,7 +68,7 @@ npm run test      # vitest run
 npm run test
 ```
 
-94 юнит-теста Vitest покрывают всю логику вне React: мапперы
+99 юнит-тестов Vitest покрывают всю логику вне React: мапперы
 уведомлений и журнала, цикл поллинга (ack, backoff, гарантированный
 ack при ошибке диспетча), синхронизацию аккаунта, стор чатов (дедуп,
 монотонные статусы, pending -> error при рестарте), нормализацию
@@ -96,6 +96,9 @@ src/
     chatId.ts              нормализация номера -> chatId, маска ввода,
                            isSendableChatId
     format.ts              даты, время, длительность звонков, цвет аватара
+    linkify.ts             разбор URL в тексте -> кликабельные сегменты
+    geo.ts                 slippy-map математика для мини-карты локаций
+                           (тайлы tile.openstreetmap.org + пин)
     storage.ts             persist-хранилище с fallback в память
   store/                 Zustand-сторы с persist в localStorage:
     authStore.ts           креды инстанса + баннер ошибки связи
