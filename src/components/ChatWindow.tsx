@@ -7,6 +7,7 @@ import {
   SendOutlined,
 } from '@ant-design/icons';
 import {
+  ApiError,
   deleteMessage,
   downloadFile,
   editMessage,
@@ -265,19 +266,28 @@ export function ChatWindow({ onBack }: { onBack?: () => void }) {
     if (!credentials) return;
     try {
       await deleteMessage(credentials, chatId, m.id);
-      // blob:-превью больше не нужно - отзываем, не копим утечки
-      if (m.url?.startsWith('blob:')) URL.revokeObjectURL(m.url);
-      updateMessage(chatId, m.id, {
-        deleted: true,
-        text: 'Сообщение удалено',
-        url: undefined,
-        extra: undefined,
-        quote: undefined,
-        reaction: undefined,
-      });
     } catch (error) {
-      messageApi.error(error instanceof Error ? error.message : 'Не удалось удалить');
+      // 'Message already was deleted' (400) - уже удалено на стороне
+      // WhatsApp (с телефона, в другой вкладке), просто фиксируем локально
+      const alreadyDeleted =
+        error instanceof ApiError &&
+        error.status === 400 &&
+        /deleted/i.test(error.message);
+      if (!alreadyDeleted) {
+        messageApi.error(error instanceof Error ? error.message : 'Не удалось удалить');
+        return;
+      }
     }
+    // blob:-превью больше не нужно - отзываем, не копим утечки
+    if (m.url?.startsWith('blob:')) URL.revokeObjectURL(m.url);
+    updateMessage(chatId, m.id, {
+      deleted: true,
+      text: 'Сообщение удалено',
+      url: undefined,
+      extra: undefined,
+      quote: undefined,
+      reaction: undefined,
+    });
   };
 
   // Свежая ссылка на файл сообщения: downloadUrl у GREEN-API протухает,
