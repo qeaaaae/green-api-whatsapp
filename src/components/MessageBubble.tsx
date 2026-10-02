@@ -99,7 +99,9 @@ export function MessageBubble({
   highlighted,
 }: MessageBubbleProps) {
   const dir = message.outgoing ? 'out' : 'in';
-  const kind = message.kind ?? 'text';
+  // Удалённое показываем как текст-плейсхолдер: у card-пузырей мета
+  // абсолютная и налезала бы на 'Сообщение удалено'
+  const kind = message.deleted ? 'text' : (message.kind ?? 'text');
   const isImage = kind === 'image' && !!message.url;
   const isVideo = kind === 'video' && !!message.url;
   const isMedia = isImage || isVideo;
