@@ -1,0 +1,1092 @@
+:root {
+  color-scheme: light;
+  --accent: #00a884;
+  --page: #e7ebf0;
+  --sider: #ffffff;
+  --panel: #f0f2f5;
+  --border: #e5e5e5;
+  --hover: #f5f6f6;
+  --active: #f0f2f5;
+  --chat-bg: #efeae2;
+  --empty-bg: #f0f2f5;
+  --bubble-in: #ffffff;
+  --bubble-out: #d9fdd3;
+  --text: #111b21;
+  --meta: rgba(17, 27, 33, 0.45);
+  --secondary: #667781;
+  --sender: #008f6f;
+  --sender-out: rgba(17, 27, 33, 0.6);
+  --date-bg: #ffffff;
+  --date-color: #54656f;
+  --reaction-bg: #ffffff;
+  --link: #027eb5;
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+  --accent: #00c2a0;
+  --page: #111b21;
+  --sider: #111b21;
+  --panel: #202c33;
+  --border: #222d34;
+  --hover: #2a3942;
+  --active: #2a3942;
+  --chat-bg: #0b141a;
+  --empty-bg: #222e35;
+  --bubble-in: #202c33;
+  --bubble-out: #005c4b;
+  --text: #e9edef;
+  --meta: rgba(233, 237, 239, 0.45);
+  --secondary: #8696a0;
+  --sender: #00c2a0;
+  --sender-out: rgba(233, 237, 239, 0.7);
+  --date-bg: #182229;
+  --date-color: #8696a0;
+  --reaction-bg: #182229;
+  --link: #53bdeb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: var(--page);
+  overflow: hidden;
+}
+
+/* --- Кастомные скроллбары в фирменном зелёном --- */
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--accent) 45%, transparent) transparent;
+}
+
+/* WebKit/Chromium: тонкий ползунок с визуальным отступом за счёт
+   прозрачной рамки и background-clip, трек прозрачный */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--accent) 75%, transparent);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+#root {
+  height: 100%;
+}
+
+/* --- Экран логина --- */
+
+.login-screen {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(#00a884 220px, var(--page) 220px);
+}
+
+.login-card {
+  width: min(380px, 92vw);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.login-title {
+  text-align: center;
+}
+
+/* --- Layout чата --- */
+
+/* Масштаб интерфейса (Aa-меню): zoom + компенсация размеров, чтобы не было скроллбара */
+:root {
+  --ui-zoom: 1;
+}
+
+[data-scale='small'] {
+  --ui-zoom: 0.88;
+}
+
+[data-scale='large'] {
+  --ui-zoom: 1.15;
+}
+
+.app-shell {
+  transform: scale(var(--ui-zoom));
+  transform-origin: top left;
+  width: calc(100% / var(--ui-zoom));
+  height: calc(100% / var(--ui-zoom));
+  display: flex;
+  flex-direction: column;
+}
+
+.app-layout {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.app-sider {
+  background: var(--sider) !important;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.app-sider__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--panel);
+}
+
+.app-sider__title.ant-typography {
+  margin: 0;
+}
+
+/* --- Список чатов --- */
+
+.chat-list {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-list__new {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-list__autocomplete {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-list__empty {
+  margin-top: 48px;
+}
+
+.chat-list__items {
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Обёртка antd Listy не должна иметь свои паддинги/бордер/hover -
+   иначе активный чат красится уже строки, а hover покрывает больше */
+.chat-list__items .ant-listy-item {
+  padding: 0;
+  border-bottom: none;
+}
+
+.chat-list__items .ant-listy-item:hover {
+  background: transparent;
+}
+
+.chat-list__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  cursor: pointer;
+}
+
+.chat-list__item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-list__item:hover {
+  background: var(--hover);
+}
+
+.chat-list__item--active,
+.chat-list__item--active:hover {
+  background: var(--active);
+}
+
+.chat-list__title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-list__preview {
+  font-size: 13px;
+  min-width: 0;
+}
+
+.chat-list__preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.chat-list__time {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.chat-list__time--unread {
+  color: var(--accent);
+}
+
+.chat-list__unread {
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+}
+
+/* --- Модалки вложений --- */
+
+.attach-modal__icon {
+  color: var(--accent);
+  margin-right: 4px;
+}
+
+.attach-modal__input-icon {
+  color: var(--secondary);
+  /* справа от иконки тот же отступ, что слева у инпута (11px):
+     4px даёт antd на .ant-input-prefix + 7px здесь */
+  margin-right: 7px;
+}
+
+.attach-modal__file {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border-radius: 8px;
+  background: var(--hover);
+}
+
+.attach-modal__file-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 20px;
+}
+
+.attach-modal__file-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.attach-modal__file-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attach-modal__file-size {
+  font-size: 12.5px;
+  color: var(--secondary);
+}
+
+/* --- Окно чата --- */
+
+.chat-window {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  background-color: var(--chat-bg);
+  /* clip, а не hidden: обрезает узор, но НЕ делает контейнер scrollable -
+     иначе программный скролл потомка угонял бы весь чат вверх */
+  overflow: clip;
+}
+
+/* Узор чата повёрнут на 45° - запас inset:-100%, чтобы края не оголялись
+   даже на широких окнах. Слой на .chat-window (не на скроллящемся messages),
+   иначе он увеличил бы область прокрутки; узор не скроллится - как в WhatsApp */
+.chat-window::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120' viewBox='0 0 120 120'%3E%3Cg fill='none' stroke='%23a3acb2' stroke-opacity='0.35' stroke-width='1.5' stroke-linecap='round'%3E%3Ccircle cx='20' cy='20' r='6'/%3E%3Cpath d='M55 15l8 8m0-8l-8 8'/%3E%3Crect x='88' y='12' width='14' height='10' rx='2'/%3E%3Cpath d='M15 60q8-10 16 0t16 0'/%3E%3Ccircle cx='95' cy='55' r='7'/%3E%3Cpath d='M55 55v10m-5-5h10'/%3E%3Cpath d='M20 95l10 10m0-10l-10 10'/%3E%3Crect x='70' y='88' width='12' height='12' rx='2'/%3E%3Cpath d='M100 95q6-8 12 0'/%3E%3Ccircle cx='45' cy='105' r='5'/%3E%3C/g%3E%3C/svg%3E");
+  transform: rotate(-45deg);
+}
+
+.chat-window--empty {
+  align-items: center;
+  justify-content: center;
+  background: var(--empty-bg);
+}
+
+.chat-window--empty::before {
+  content: none;
+}
+
+.chat-window__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  /* поверх узора-фона .chat-window::before */
+  position: relative;
+}
+
+.chat-window__header > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-window__chatid {
+  font-size: 12px;
+}
+
+.chat-window__back {
+  margin-left: -8px;
+}
+
+.chat-window__messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 8%;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  /* узор .chat-window::before должен быть виден - фон прозрачный */
+  background-color: transparent;
+}
+
+.chat-window__input {
+  display: flex;
+  gap: 8px;
+  padding: 8px 16px calc(8px + env(safe-area-inset-bottom));
+  background: var(--panel);
+  align-items: center;
+  /* поверх узора-фона .chat-window::before */
+  position: relative;
+}
+
+.chat-window__input .ant-input {
+  border-radius: 8px;
+  padding: 9px 14px;
+}
+
+/* кнопки у поля ввода - в высоту инпута и с крупной иконкой */
+.chat-window__input .ant-btn {
+  height: 42px;
+  min-width: 42px;
+  font-size: 20px;
+}
+
+.chat-window__input .ant-btn .anticon {
+  font-size: 20px;
+}
+
+/* круглая кнопка отправки: фиксированный квадрат, иначе растягивается в овал */
+.chat-window__input .ant-btn-circle {
+  width: 42px;
+  padding: 0;
+}
+
+/* --- Панель ответа/правки над полем ввода --- */
+
+.compose-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  background: var(--panel);
+  border-top: 1px solid var(--border, rgba(11, 20, 26, 0.08));
+  /* поверх узора-фона .chat-window::before */
+  position: relative;
+}
+
+.compose-context__body {
+  flex: 1;
+  min-width: 0;
+  padding: 5px 10px;
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: rgba(11, 20, 26, 0.06);
+}
+
+[data-theme='dark'] .compose-context__body {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.compose-context__title {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.compose-context__text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+/* --- Сообщения --- */
+
+.bubble {
+  position: relative;
+  max-width: 65%;
+  padding: 6px 9px 8px;
+  border-radius: 7.5px;
+  background: var(--bubble-in);
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14.2px;
+  line-height: 19px;
+  color: var(--text);
+}
+
+/* хвостик у первого сообщения в группе */
+.bubble--in-tail::before,
+.bubble--out-tail::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 0;
+  border: 4px solid transparent;
+}
+
+/* увеличенный отступ между группами сообщений, плотно внутри группы */
+.bubble--in-tail,
+.bubble--out-tail {
+  margin-top: 10px;
+}
+
+.bubble--in-tail:first-child,
+.bubble--out-tail:first-child {
+  margin-top: 0;
+}
+
+.bubble--in {
+  align-self: flex-start;
+}
+
+.bubble--in-tail {
+  border-top-left-radius: 0;
+}
+
+.bubble--in-tail::before {
+  left: -8px;
+  border-top-color: var(--bubble-in);
+  border-right-color: var(--bubble-in);
+}
+
+.bubble--out {
+  align-self: flex-end;
+  background: var(--bubble-out);
+}
+
+.bubble--out-tail {
+  border-top-right-radius: 0;
+}
+
+.bubble--out-tail::before {
+  right: -8px;
+  border-top-color: var(--bubble-out);
+  border-left-color: var(--bubble-out);
+}
+
+.bubble__meta {
+  float: right;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 10px 0 0 8px;
+  font-size: 11px;
+  line-height: 14px;
+  color: var(--meta);
+}
+
+/* карточные пузыри (контакт/локация/файл/опрос/аудио): мета в углу,
+   без отдельной строки - иначе снизу болтается пустое место */
+.bubble--card {
+  padding-bottom: 5px;
+}
+
+.bubble--card .bubble__meta {
+  position: absolute;
+  right: 7px;
+  bottom: 4px;
+  float: none;
+  margin: 0;
+}
+
+.bubble--card .bubble__card-sub:last-child,
+.bubble--card .bubble__poll-hint:last-child,
+.bubble--card .bubble__audio:last-child {
+  margin-right: 52px;
+}
+
+.bubble__status {
+  font-size: 12px;
+}
+
+.bubble__status--error {
+  color: #f15c6d;
+  cursor: pointer;
+}
+
+.bubble__status--read {
+  color: #53bdeb;
+}
+
+.bubble__sender {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--sender);
+}
+
+.bubble--out .bubble__sender {
+  color: var(--sender-out);
+}
+
+.bubble__edited {
+  margin-right: 2px;
+  font-size: 11px;
+  color: var(--meta);
+}
+
+/* метка 'Переслано' над текстом, как 'Forwarded' в WhatsApp */
+.bubble__forwarded {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 2px;
+  font-size: 12.5px;
+  font-style: italic;
+  color: var(--meta);
+}
+
+.bubble__forwarded .anticon {
+  font-size: 11px;
+}
+
+.bubble--media .bubble__forwarded {
+  padding: 5px 7px 0;
+}
+
+/* вспышка пузыря после перехода по цитате */
+.bubble--highlight {
+  animation: bubble-highlight 1.4s ease-out;
+}
+
+@keyframes bubble-highlight {
+  from {
+    background-color: color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+}
+
+.bubble__meta--media .bubble__edited {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* удалённое у всех сообщение - курсивный плейсхолдер */
+.bubble__text--deleted {
+  font-style: italic;
+  color: var(--secondary);
+}
+
+/* пропущенный звонок - красная иконка */
+.bubble__card--missed .bubble__card-icon {
+  color: #f15c6d;
+}
+
+/* На тач-устройствах отключаем выделение/каллоут при long-press -
+   контекстное меню открывается жестом удержания */
+@media (hover: none) {
+  .bubble {
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* --- Разделитель даты --- */
+
+.chat-date {
+  align-self: center;
+  margin: 10px 0;
+}
+
+.chat-date span {
+  display: inline-block;
+  padding: 5px 12px;
+  border-radius: 7.5px;
+  background: var(--date-bg);
+  box-shadow: 0 1px 0.5px rgba(11, 20, 26, 0.13);
+  font-size: 12.5px;
+  color: var(--date-color);
+}
+
+.bubble__link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+/* гиперссылка внутри текста сообщения - фирменный синий WhatsApp */
+.bubble__url {
+  color: var(--link);
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.bubble__url:hover {
+  text-decoration: underline;
+}
+
+.bubble__link:hover {
+  opacity: 0.82;
+}
+
+.bubble__link:hover,
+.bubble__link:hover .bubble__card-title,
+.bubble__link:hover .bubble__card-sub {
+  color: inherit;
+}
+
+.bubble__link:hover .bubble__card-sub {
+  color: var(--secondary);
+}
+
+.bubble--out .bubble__link:hover .bubble__card-sub {
+  color: var(--sender-out);
+}
+
+.bubble__map {
+  display: block;
+  width: 100%;
+  max-width: 280px;
+  border-radius: 6px;
+  margin-bottom: 6px;
+}
+
+.bubble__audio {
+  display: block;
+  width: 240px;
+  max-width: 60vw;
+  height: 40px;
+}
+
+/* --- Карточки: контакт / локация / файл --- */
+
+.bubble__card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  padding: 2px 0;
+}
+
+.bubble__card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--active);
+  color: var(--secondary);
+  font-size: 20px;
+}
+
+.bubble--out .bubble__card-icon {
+  background: rgba(255, 255, 255, 0.35);
+  color: #fff;
+}
+
+.bubble__card-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.bubble__card-title {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bubble__card-sub {
+  font-size: 12.5px;
+  color: var(--secondary);
+}
+
+.bubble--out .bubble__card-sub {
+  color: var(--sender-out);
+}
+
+/* --- Опрос --- */
+
+.bubble__poll {
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+}
+
+.bubble__poll-question {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.bubble__poll-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 5px;
+  font-size: 13.5px;
+}
+
+.bubble__poll-radio {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid var(--secondary);
+}
+
+.bubble__poll-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--secondary);
+}
+
+.bubble--out .bubble__poll-hint {
+  color: var(--sender-out);
+}
+
+/* --- Цитата (ответ на сообщение) --- */
+
+.bubble__quote {
+  display: block;
+  margin-bottom: 4px;
+  padding: 5px 8px;
+  border-left: 3px solid var(--accent);
+  border-radius: 5px;
+  background: rgba(11, 20, 26, 0.06);
+  overflow: hidden;
+}
+
+.bubble--out .bubble__quote {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme='dark'] .bubble__quote {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.bubble--media .bubble__quote {
+  margin: 3px 3px 5px;
+}
+
+.bubble__quote--clickable {
+  cursor: pointer;
+}
+
+.bubble__quote--clickable:hover {
+  background: rgba(11, 20, 26, 0.11);
+}
+
+[data-theme='dark'] .bubble__quote--clickable:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.bubble__quote-sender {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.bubble__quote-body {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.bubble__quote-thumb {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.bubble__quote-text {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: 13px;
+  color: var(--secondary);
+}
+
+.bubble__reaction {
+  position: absolute;
+  bottom: -13px;
+  padding: 1px 5px;
+  border-radius: 10px;
+  background: var(--reaction-bg);
+  box-shadow: 0 1px 2px rgba(11, 20, 26, 0.25);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.bubble__reaction--in {
+  right: 4px;
+}
+
+.bubble__reaction--out {
+  left: 4px;
+}
+
+/* место под реакцию, чтобы не наезжала на следующее сообщение */
+.bubble:has(.bubble__reaction) {
+  margin-bottom: 14px;
+}
+
+/* --- Медиа-пузырь (картинка во всю ширину) --- */
+
+.bubble--media {
+  padding: 3px;
+  min-width: 200px;
+  max-width: 330px;
+}
+
+.bubble--media .bubble__sender {
+  display: block;
+  padding: 5px 7px 2px;
+}
+
+.bubble__media {
+  position: relative;
+  display: block;
+  cursor: zoom-in;
+}
+
+.bubble__media img,
+.bubble__media video {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+  object-fit: cover;
+  border-radius: 5.5px;
+}
+
+.bubble__media video {
+  background: #000;
+}
+
+.bubble__meta--media {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  margin: 0;
+  padding: 2px 7px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+}
+
+.bubble__meta--media .bubble__status {
+  color: #fff;
+}
+
+.bubble__meta--media .bubble__status--read {
+  color: #53bdeb;
+}
+
+.bubble__caption {
+  display: block;
+  padding: 4px 7px 5px;
+}
+
+/* --- Лайтбокс --- */
+
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.85);
+  animation: lightbox-fade 0.18s ease-out;
+}
+
+.lightbox__figure {
+  position: relative;
+  max-width: 92vw;
+  max-height: 88vh;
+  animation: lightbox-zoom 0.18s ease-out;
+}
+
+.lightbox__img {
+  display: block;
+  max-width: 92vw;
+  max-height: 88vh;
+  border-radius: 6px;
+}
+
+.lightbox__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 40px 14px 12px;
+  border-radius: 0 0 6px 6px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  color: #fff;
+  font-size: 15px;
+  text-align: center;
+}
+
+.lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: none;
+  background: none;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.lightbox--closing {
+  animation: lightbox-fade-out 0.18s ease-in forwards;
+}
+
+.lightbox--closing .lightbox__figure {
+  animation: lightbox-zoom-out 0.18s ease-in forwards;
+}
+
+@keyframes lightbox-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes lightbox-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes lightbox-zoom {
+  from {
+    opacity: 0.3;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes lightbox-zoom-out {
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* --- Пересылка: список чатов в модалке --- */
+
+.forward-list {
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.forward-list__item {
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.forward-list__item:hover {
+  background: var(--active);
+}
+
+/* --- Мобильная адаптация --- */
+
+@media (max-width: 767px) {
+  .app-sider {
+    border-right: none;
+  }
+
+  .chat-window__messages {
+    padding: 12px 4%;
+  }
+
+  .bubble {
+    max-width: 82%;
+  }
+
+  .chat-window__input {
+    padding: 8px 10px;
+  }
+}
