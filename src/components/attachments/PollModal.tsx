@@ -77,8 +77,14 @@ export function PollModal({
           rules={[
             {
               validator: async (_, value: string[]) => {
-                if ((value ?? []).filter((o) => o?.trim()).length < 2) {
+                const opts = (value ?? []).map((o) => o?.trim()).filter(Boolean);
+                if (opts.length < 2) {
                   throw new Error('Минимум два варианта');
+                }
+                // WhatsApp отклоняет опросы с одинаковыми вариантами -
+                // режем до отправки, иначе пузырь создаётся с ошибкой
+                if (new Set(opts.map((o) => o.toLowerCase())).size !== opts.length) {
+                  throw new Error('Варианты должны быть разными');
                 }
               },
             },

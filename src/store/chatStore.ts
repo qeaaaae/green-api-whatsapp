@@ -202,6 +202,12 @@ export const useChatStore = create<ChatState>()(
             if (GENERIC_TEXT.has(m.text) && !GENERIC_TEXT.has(prev.text)) {
               next.text = prev.text;
             }
+            // Удаление липкое: журнал отдаёт сообщение с исходным текстом,
+            // без флага - не даём ему воскреснуть и протечь в превью чата
+            if (prev.deleted) {
+              next.deleted = true;
+              next.text = 'Сообщение удалено';
+            }
             byId.set(m.id, next);
           }
           return {

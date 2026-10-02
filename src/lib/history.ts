@@ -1,9 +1,10 @@
 import { getChatHistory, type JournalMessage } from '../api/greenApi';
 import { useChatStore } from '../store/chatStore';
-import { mapQuote, STATUS_MAP, thumb, vcardOrg, vcardPhone } from './notifications';
+import { repairEncoding } from './format';
+import { fixExtra, mapQuote, STATUS_MAP, thumb, vcardOrg, vcardPhone } from './notifications';
 import type { ChatMessage } from '../types';
 
-export function toMessage(j: JournalMessage): ChatMessage | null {
+function toMessageRaw(j: JournalMessage): ChatMessage | null {
   if (!j.idMessage || !j.timestamp || !j.typeMessage) return null;
   const base = {
     id: j.idMessage,
@@ -14,7 +15,7 @@ export function toMessage(j: JournalMessage): ChatMessage | null {
       j.type === 'outgoing'
         ? (STATUS_MAP[j.statusMessage ?? ''] ?? 'sent')
         : undefined,
-    quote: mapQuote(j.quotedMessage),
+    quote: mapQuote(j.quotedMessage, j.chatId),
     // в журнале флаг на верхнем уровне, у составных типов - вложенный
     forwarded:
       j.isForwarded ||
@@ -105,6 +106,19 @@ export function toMessage(j: JournalMessage): ChatMessage | null {
   }
 }
 
+// Текстовые поля журнала местами приходят в битой кодировке (Latin-1 как
+// UTF-8) - чиним готовый объект, не размазывая по каждой ветке switch
+export function toMessage(j: JournalMessage): ChatMessage | null {
+  const m = toMessageRaw(j);
+  if (!m) return null;
+  return {
+    ...m,
+    text: repairEncoding(m.text),
+    senderName: m.senderName && repairEncoding(m.senderName),
+    extra: fixExtra(m.extra),
+  };
+}
+
 const attempted = new Set<string>();
 
 /**
@@ -146,7 +160,11 @@ export async function ensureChatHistory(
     const store = useChatStore.getState();
     store.mergeMessages(chatId, messages);
     for (const r of reactions) {
-      store.updateMessage(chatId, r.messageId, { reaction: r.emoji || undefined });
+      // Пустой emoji в журнале - не снятие: журнал хранит устаревшие записи
+      // реакций; снятие ловим только живым reactionMessage-вебхуком
+      if (r.emoji) {
+        store.updateMessage(chatId, r.messageId, { reaction: r.emoji });
+      }
     }
   } catch {
     attempted.delete(chatId);

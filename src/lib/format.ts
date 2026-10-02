@@ -33,6 +33,23 @@ export function formatMessageDate(timestampSec: number): string {
   });
 }
 
+// GREEN-API местами отдаёт кириллицу (fileName, caption, имена) как
+// UTF-8-байты, прочитанные в Latin-1: 'Ð­ÐºÐ°...' вместо 'эка...'.
+// Признак - байт C0-DF (как символ À-Þ) за которым идёт 80-BF.
+const MOJIBAKE = /[À-Þ][-¿]/;
+
+export function repairEncoding(s: string): string {
+  if (!MOJIBAKE.test(s)) return s;
+  const bytes = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) {
+    const c = s.charCodeAt(i);
+    if (c > 0xff) return s; // не латиница-маски - оставляем как есть
+    bytes[i] = c;
+  }
+  const fixed = new TextDecoder('utf-8').decode(bytes);
+  return fixed.includes(String.fromCharCode(0xfffd)) ? s : fixed;
+}
+
 // Детерминированный цвет аватарки по chatId, как в WhatsApp
 const AVATAR_COLORS = [
   '#00a884', '#53bdeb', '#e91e63', '#9c27b0',

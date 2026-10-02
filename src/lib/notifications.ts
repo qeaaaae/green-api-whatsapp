@@ -5,6 +5,7 @@ import type {
   Notification,
   QuotedMessage,
 } from '../types';
+import { repairEncoding } from './format';
 
 type NotificationBody = Notification['body'];
 type MessageData = NonNullable<NotificationBody['messageData']>;
@@ -45,8 +46,40 @@ export const STATUS_MAP: Record<string, MessageStatus> = {
   failed: 'error',
 };
 
-// quotedMessage -> MessageQuote: текст и тип цитируемого сообщения
-export function mapQuote(qm?: QuotedMessage): ChatMessage['quote'] | undefined {
+// participant приходит как jid (79539833990@c.us). В личном чате
+// участников двое: jid собеседника = chatId, иначе это мы сами -> 'Вы'.
+// В группе jid не разобрать - показываем просто номер.
+export function quoteSenderLabel(
+  sender: string | undefined,
+  chatId: string | undefined,
+  fallbackName?: string,
+): string | undefined {
+  if (!sender || !chatId) return sender;
+  if (!sender.includes('@')) {
+    // Уже нормализованный номер собеседника (merge журнала поверх mapQuote) -
+    // совпал с номером чата -> это не мы, отдаём fallback-имя
+    if (
+      chatId.endsWith('@c.us') &&
+      /^\d+$/.test(sender) &&
+      sender === chatId.split('@')[0]
+    ) {
+      return fallbackName ?? sender;
+    }
+    return sender;
+  }
+  if (chatId.endsWith('@c.us')) {
+    return sender === chatId ? (fallbackName ?? sender.split('@')[0]) : 'Вы';
+  }
+  return sender.split('@')[0];
+}
+
+// quotedMessage -> MessageQuote: текст и тип цитируемого сообщения.
+// chatId нужен, чтобы jid автора нормализовать в 'Вы'/имя - иначе после
+// F5 журнальный merge вернёт сырой 7953...@c.us поверх нормализованного
+export function mapQuote(
+  qm?: QuotedMessage,
+  chatId?: string,
+): ChatMessage['quote'] | undefined {
   if (!qm) return undefined;
   const text =
     qm.typeMessage === 'textMessage' || qm.typeMessage === 'extendedTextMessage'
@@ -65,18 +98,26 @@ export function mapQuote(qm?: QuotedMessage): ChatMessage['quote'] | undefined {
         }[qm.typeMessage ?? ''] ?? 'Сообщение');
   return {
     id: qm.stanzaId,
-    sender: qm.senderName ?? qm.participant,
-    text,
+    sender: quoteSenderLabel(
+      qm.senderName ? repairEncoding(qm.senderName) : qm.participant,
+      chatId,
+    ),
+    text: repairEncoding(text),
     thumbnail: thumb(qm.jpegThumbnail),
   };
 }
 
 // У typeMessage='quotedMessage' цитируемое приходит как stanzaId/participant
 // внутри extendedTextMessageData - полный текст подтянем позже из стора
-const quoteFromReply = (md: MessageData): ChatMessage['quote'] | undefined => {
+const quoteFromReply = (
+  md: MessageData,
+  chatId?: string,
+): ChatMessage['quote'] | undefined => {
   if (md.typeMessage !== 'quotedMessage') return undefined;
   const ed = md.extendedTextMessageData;
-  return ed?.stanzaId ? { id: ed.stanzaId, sender: ed.participant, text: '' } : undefined;
+  return ed?.stanzaId
+    ? { id: ed.stanzaId, sender: quoteSenderLabel(ed.participant, chatId), text: '' }
+    : undefined;
 };
 
 // isForwarded лежит внутри per-type data-объекта, а не на верхнем уровне
@@ -89,7 +130,7 @@ const isForwarded = (md: MessageData): boolean | undefined =>
   undefined;
 
 // Общая распаковка messageData в поля сообщения
-function messagePayload(
+function rawPayload(
   md: MessageData,
 ): Pick<ChatMessage, 'text' | 'kind'> & { url?: string; extra?: ChatMessage['extra'] } | null {
   switch (md.typeMessage) {
@@ -185,6 +226,26 @@ function messagePayload(
   }
 }
 
+// Кириллица из GREEN-API местами приходит битой кодировкой - чиним на входе
+export const fixExtra = (extra?: MessageExtra): MessageExtra | undefined => {
+  if (!extra) return extra;
+  const out = { ...extra };
+  for (const key of ['locationName', 'address', 'contactName', 'company'] as const) {
+    const v = out[key];
+    if (typeof v === 'string') out[key] = repairEncoding(v);
+  }
+  if (out.options) out.options = out.options.map(repairEncoding);
+  return out;
+};
+
+function messagePayload(md: MessageData) {
+  const p = rawPayload(md);
+  if (!p) return null;
+  return { ...p, text: repairEncoding(p.text), extra: fixExtra(p.extra) };
+}
+
+const repaired = (v?: string) => (v ? repairEncoding(v) : v);
+
 // incomingMessageReceived -> ChatMessage; неподдерживаемые типы -> null
 export function mapIncomingMessage(body: NotificationBody): IncomingMessage | null {
   if (body.typeWebhook !== 'incomingMessageReceived') return null;
@@ -196,7 +257,10 @@ export function mapIncomingMessage(body: NotificationBody): IncomingMessage | nu
   if (!payload) return null;
 
   const title =
-    sender.senderContactName ?? sender.senderName ?? sender.chatName ?? sender.chatId;
+    repaired(sender.senderContactName) ??
+    repaired(sender.senderName) ??
+    repaired(sender.chatName) ??
+    sender.chatId;
 
   return {
     chatId: sender.chatId,
@@ -205,8 +269,8 @@ export function mapIncomingMessage(body: NotificationBody): IncomingMessage | nu
       id: body.idMessage,
       timestamp: body.timestamp,
       outgoing: false,
-      senderName: sender.senderName ?? sender.senderContactName,
-      quote: mapQuote(md.quotedMessage) ?? quoteFromReply(md),
+      senderName: repaired(sender.senderName ?? sender.senderContactName),
+      quote: mapQuote(md.quotedMessage, sender.chatId) ?? quoteFromReply(md, sender.chatId),
       forwarded: isForwarded(md),
       ...payload,
     },
@@ -238,7 +302,7 @@ export function mapOutgoingMessage(
       timestamp: body.timestamp,
       outgoing: true,
       status: 'sent',
-      quote: mapQuote(md.quotedMessage) ?? quoteFromReply(md),
+      quote: mapQuote(md.quotedMessage, chatId) ?? quoteFromReply(md, chatId),
       forwarded: isForwarded(md),
       ...payload,
     },

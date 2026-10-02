@@ -149,6 +149,19 @@ describe('chatStore', () => {
     );
   });
 
+  it('mergeMessages не воскрешает удалённое: deleted липкий, текст плейсхолдер', () => {
+    const { addMessage, mergeMessages } = useChatStore.getState();
+    addMessage('1@c.us', { ...msg('m1'), text: 'привет' });
+    useChatStore
+      .getState()
+      .updateMessage('1@c.us', 'm1', { deleted: true, text: 'Сообщение удалено' });
+    // журнал отдаёт сообщение с исходным текстом и без флага удаления
+    mergeMessages('1@c.us', [{ ...msg('m1'), text: 'привет' }]);
+    const m = useChatStore.getState().chats['1@c.us']!.messages[0]!;
+    expect(m.deleted).toBe(true);
+    expect(m.text).toBe('Сообщение удалено');
+  });
+
   it('mergeMessages повышает статус и оставляет error липким', () => {
     const { addMessage, mergeMessages } = useChatStore.getState();
     addMessage('1@c.us', {

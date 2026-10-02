@@ -384,6 +384,8 @@ export function ChatWindow({ onBack }: { onBack?: () => void }) {
               <MessageBubble
                 message={m}
                 isGroupStart={isGroupStart}
+                chatId={chatId}
+                chatTitle={chat.title}
                 senderLabel={
                   isGroupStart
                     ? m.outgoing

@@ -8,6 +8,7 @@ import {
   mapOutgoingStatus,
   mapReaction,
   mapServiceNotice,
+  quoteSenderLabel,
 } from './notifications';
 import { isPhoneLike } from './chatId';
 import { ensureChatTitle } from './chatTitle';
@@ -57,21 +58,6 @@ async function resolveQuoteRemote(
   } catch {
     // stanzaId может не найтись в журнале - остаётся плейсхолдер 'Сообщение'
   }
-}
-
-// participant приходит как jid (79539833990@c.us). В личном чате
-// участников двое: jid собеседника = chatId, иначе это мы сами -> 'Вы'.
-// В группе jid не разобрать - показываем просто номер.
-function quoteSenderLabel(
-  sender: string | undefined,
-  chatId: string,
-  fallbackName?: string,
-): string | undefined {
-  if (!sender?.includes('@')) return sender;
-  if (chatId.endsWith('@c.us')) {
-    return sender === chatId ? (fallbackName ?? sender.split('@')[0]) : 'Вы';
-  }
-  return sender.split('@')[0];
 }
 
 // У typeMessage='quotedMessage' GREEN-API присылает лишь stanzaId/participant:

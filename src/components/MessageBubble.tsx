@@ -17,7 +17,7 @@ import {
 import { formatMessageTime } from '../lib/format';
 import { tilesCovering, tileUrl } from '../lib/geo';
 import { linkify } from '../lib/linkify';
-import { GENERIC_TEXT } from '../lib/notifications';
+import { GENERIC_TEXT, quoteSenderLabel } from '../lib/notifications';
 import type { ChatMessage } from '../types';
 import { ImageLightbox } from './ImageLightbox';
 
@@ -66,6 +66,9 @@ interface MessageBubbleProps {
   isGroupStart: boolean;
   /** Подпись отправителя - показывается на первом сообщении группы */
   senderLabel?: string;
+  /** Для нормализации quote.sender: 'Вы'/имя чата вместо сырого jid */
+  chatId?: string;
+  chatTitle?: string;
   onRetry?: (message: ChatMessage) => void;
   onReply?: (message: ChatMessage) => void;
   onEdit?: (message: ChatMessage) => void;
@@ -84,6 +87,8 @@ export function MessageBubble({
   message,
   isGroupStart,
   senderLabel,
+  chatId,
+  chatTitle,
   onRetry,
   onReply,
   onEdit,
@@ -219,7 +224,12 @@ export function MessageBubble({
         </span>
       )}
       {message.quote && !message.deleted && (
-        <QuoteBlock quote={message.quote} onQuoteClick={onQuoteClick} />
+        <QuoteBlock
+          quote={message.quote}
+          onQuoteClick={onQuoteClick}
+          chatId={chatId}
+          chatTitle={chatTitle}
+        />
       )}
       {message.deleted ? (
         <>
@@ -475,10 +485,18 @@ function LinkedText({ text }: { text: string }) {
 function QuoteBlock({
   quote,
   onQuoteClick,
+  chatId,
+  chatTitle,
 }: {
   quote: NonNullable<ChatMessage['quote']>;
   onQuoteClick?: (quoteId: string) => void;
+  chatId?: string;
+  chatTitle?: string;
 }) {
+  // В persist могли застрять старые записи с сырым jid вместо 'Вы'/имени -
+  // нормализуем при отрисовке, чтобы вид не зависел от того, когда
+  // сообщение попало в стор
+  const sender = quoteSenderLabel(quote.sender, chatId, chatTitle);
   return (
     <span
       className={`bubble__quote${onQuoteClick && quote.id ? ' bubble__quote--clickable' : ''}`}
@@ -491,9 +509,7 @@ function QuoteBlock({
           : undefined
       }
     >
-      {quote.sender && (
-        <span className="bubble__quote-sender">{quote.sender}</span>
-      )}
+      {sender && <span className="bubble__quote-sender">{sender}</span>}
       <span className="bubble__quote-body">
         {quote.thumbnail && (
           <img className="bubble__quote-thumb" src={quote.thumbnail} alt="" />

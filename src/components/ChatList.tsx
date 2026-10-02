@@ -193,7 +193,7 @@ export function ChatList() {
                   </div>
                   <div className="chat-list__preview-row">
                     <Typography.Text ellipsis type="secondary" className="chat-list__preview">
-                      {last ? last.text : 'Нет сообщений'}
+                      {last ? (last.deleted ? 'Сообщение удалено' : last.text) : 'Нет сообщений'}
                     </Typography.Text>
                     {!!chat.unread && (
                       <span className="chat-list__unread">{chat.unread}</span>
